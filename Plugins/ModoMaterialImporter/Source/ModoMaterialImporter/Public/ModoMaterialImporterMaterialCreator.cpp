@@ -317,10 +317,7 @@ UMaterial* CreateMaterial(FString materialName)
 {
 	UMaterialFactoryNew* matFactory = NewObject<UMaterialFactoryNew>();
 
-	// Remove invalid characters from the material name.
-	FString AssetName = materialName;
-	CommonHelper::RemoveInvalidCharacters(AssetName);
-
+	const FString AssetName = FString::Printf(TEXT("%s"), *materialName);
 	FString PackageName = TEXT("/Game/") + AssetName;
 
 	UE_LOG(ModoMaterialImporter, Log, TEXT("Creating package: %s"), *PackageName);
