@@ -328,7 +328,10 @@ void LinkTexture(
 UMaterial* CreateMaterial(FString materialName)
 {
 	UMaterialFactoryNew* matFactory = NewObject<UMaterialFactoryNew>();
-	FString PackageName = TEXT("/Game/") + materialName;
+
+
+	const FString AssetName = FString::Printf(TEXT("%s"), *materialName);
+	FString PackageName = TEXT("/Game/") + AssetName;
 
 	UE_LOG(ModoMaterialImporter, Log, TEXT("Creating package: %s"), *PackageName);
 
