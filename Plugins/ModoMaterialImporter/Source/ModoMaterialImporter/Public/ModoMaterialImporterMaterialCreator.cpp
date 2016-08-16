@@ -329,9 +329,14 @@ UMaterial* CreateMaterial(FString materialName)
 {
 	UMaterialFactoryNew* matFactory = NewObject<UMaterialFactoryNew>();
 
+	// allow importing of materials that reside in a place other than the base folder.
+	FString l,r;
+	const FString assetName =
+		materialName.Split(TEXT("/"), &l, &r, ESearchCase::CaseSensitive, ESearchDir::FromEnd) ?
+			r : materialName;
+	// PackageName should contain the full path to the asset
+	FString PackageName = TEXT("/Game/") + materialName;
 
-	const FString AssetName = FString::Printf(TEXT("%s"), *materialName);
-	FString PackageName = TEXT("/Game/") + AssetName;
 
 	UE_LOG(ModoMaterialImporter, Log, TEXT("Creating package: %s"), *PackageName);
 
@@ -342,7 +347,7 @@ UMaterial* CreateMaterial(FString materialName)
 	UPackage* AssetPackage = CreatePackage(NULL, *PackageName);
 	EObjectFlags Flags = RF_Public | RF_Standalone;
 
-	UObject* CreatedAsset = matFactory->FactoryCreateNew(UMaterial::StaticClass(), AssetPackage, FName(*materialName), Flags, NULL, GWarn);
+	UObject* CreatedAsset = matFactory->FactoryCreateNew(UMaterial::StaticClass(), AssetPackage, FName(*assetName), Flags, NULL, GWarn);
 
 	if (CreatedAsset)
 	{
