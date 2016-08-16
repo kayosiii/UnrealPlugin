@@ -317,8 +317,12 @@ UMaterial* CreateMaterial(FString materialName)
 {
 	UMaterialFactoryNew* matFactory = NewObject<UMaterialFactoryNew>();
 
-	const FString AssetName = FString::Printf(TEXT("%s"), *materialName);
-	FString PackageName = TEXT("/Game/") + AssetName;
+	FString l,r;
+	const FString AssetName =
+		materialName.Split(TEXT("/"), &l, &r, ESearchCase::CaseSensitive, ESearchDir::FromEnd) ?
+			r : materialName;
+	// const FString AssetName = FString::Printf(TEXT("%s"), *materialName);
+	FString PackageName = TEXT("/Game/") + materialName;
 
 	UE_LOG(ModoMaterialImporter, Log, TEXT("Creating package: %s"), *PackageName);
 
