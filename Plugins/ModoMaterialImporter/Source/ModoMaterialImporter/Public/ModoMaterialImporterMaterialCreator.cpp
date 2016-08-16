@@ -144,7 +144,7 @@ int channelOutputIndex(const FString& swizzling)
 }
 
 template <typename T>
-void LinkConstent(UMaterial* mat, const vector<float>& value, FMaterialInput<T>* matInput, int& position)
+void LinkConstant(UMaterial* mat, const vector<float>& value, FMaterialInput<T>* matInput, int& position)
 {
 	if (mat != nullptr)
 	{
@@ -681,7 +681,7 @@ bool MaterialCreator::AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
 
 			vector<float> color = { vec[0] };
 
-			LinkConstent<float>(mat, color, &matInput, graphOffset);
+			LinkConstant<float>(mat, color, &matInput, graphOffset);
 		}
 
 		return true;
@@ -755,7 +755,7 @@ bool MaterialCreator::AddVectorParam(FXmlNode *Node, UMaterial* mat, FMaterialIn
 
 			vector<float> color = { vec[0], vec[1], vec[2] };
 
-			LinkConstent<FVector>(mat, color, &matInput, graphOffset);
+			LinkConstant<FVector>(mat, color, &matInput, graphOffset);
 		}
 
 		return true;
@@ -832,7 +832,7 @@ bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
 
 			vector<float> color = { vec[0], vec[1], vec[2], vec[3] };
 
-			LinkConstent<FColor>(mat, color, &matInput, graphOffset);
+			LinkConstant<FColor>(mat, color, &matInput, graphOffset);
 		}
 
 		return true;
