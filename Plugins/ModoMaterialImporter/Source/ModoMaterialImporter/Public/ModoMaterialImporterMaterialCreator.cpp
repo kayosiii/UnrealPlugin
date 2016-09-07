@@ -26,6 +26,8 @@
 #include "Materials/MaterialExpressionConstant4Vector.h"
 #include "Materials/MaterialExpressionConstant3Vector.h"
 #include "Materials/MaterialExpressionConstant2Vector.h"
+#include "Materials/MaterialExpressionLinearInterpolate.h"
+#include "Materials/MaterialExpressionMultiply.h"
 #include "Materials/MaterialExpressionConstant.h"
 
 #include "AssetRegistryModule.h"
@@ -145,7 +147,7 @@ int channelOutputIndex(const FString& swizzling)
 }
 
 template <typename T>
-void LinkConstant(UMaterial* mat, const vector<float>& value, FMaterialInput<T>* matInput, int& position)
+void LinkConstant(UMaterial* mat, const vector<float>& value, FMaterialInput<T>* matInput, FExpressionInput * input, int &graphx, int & graphy)
 {
 	if (mat != nullptr)
 	{
@@ -188,8 +190,8 @@ void LinkConstant(UMaterial* mat, const vector<float>& value, FMaterialInput<T>*
 		mat->Expressions.Add(Expression);
 
 		Expression->MaterialExpressionEditorX = -200;
-		Expression->MaterialExpressionEditorY = position;
-		position += 64;
+		Expression->MaterialExpressionEditorY = graphy;
+		graphy += 64;
 
 		TArray<FExpressionOutput> Outputs;
 		Outputs = Expression->GetOutputs();
@@ -202,6 +204,9 @@ void LinkConstant(UMaterial* mat, const vector<float>& value, FMaterialInput<T>*
 			matInput->MaskB = Output->MaskB;
 			matInput->MaskA = Output->MaskA;
 		}
+		else if (input) {
+            input->Expression = Expression;
+        }
 
 		mat->PostEditChange();
 	}
@@ -211,8 +216,10 @@ template <typename T>
 void LinkTexture(
 	UMaterial* mat, 
 	UTexture* tex, 
-	FMaterialInput<T>* matInput, 
-	int& position, 
+	FMaterialInput<T>* matInput,
+    FExpressionInput * input,
+	int& graphx,
+    int& graphy,
 	float tiling[2], 
 	int uvIndex,
 	int outIndex, 
@@ -264,8 +271,8 @@ void LinkTexture(
 			Expression = NewObject<UMaterialExpressionTextureSample>(mat);
 			mat->Expressions.Add(Expression);
 			Expression->MaterialExpressionEditorX = -380;
-			Expression->MaterialExpressionEditorY = position;
-			position += 64;
+			Expression->MaterialExpressionEditorY = graphy;
+			graphy += 64;
 
 			Expression->Texture = tex;
 			Expression->SamplerType = samplerType;
@@ -299,7 +306,7 @@ void LinkTexture(
 					texCoordExpression->CoordinateIndex = uvIndex;
 					mat->Expressions.Add(texCoordExpression);
 					texCoordExpression->MaterialExpressionEditorX = Expression->MaterialExpressionEditorX - 100;
-					texCoordExpression->MaterialExpressionEditorY = position;
+					texCoordExpression->MaterialExpressionEditorY = graphy;
 					texCoordInput.Expression = texCoordExpression;
 				}
 
@@ -309,6 +316,9 @@ void LinkTexture(
 
 		if (matInput != NULL)
 			matInput->Connect(outIndex, Expression);
+        else if (input != NULL) {
+            input->Connect(outIndex, Expression);
+        }
 
 		mat->PostEditChange();
 	}
@@ -436,7 +446,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 			{
 
 				FString matID = matNode->GetAttribute(FString("ID"));
-				int graphOffset = -64;
+				int graphx = -200, graphy = -64;
 
 				if (matID.IsEmpty())
 				{
@@ -506,6 +516,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 					}
 				}
 
+				UE_LOG(ModoMaterialImporter, Log, TEXT("looking for ptag\n"));
 				FString materialName;
 
 				if (_usePtagMaterialName)
@@ -515,6 +526,8 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 						materialName = ptag;
 					else
 						return;
+                
+                UE_LOG(ModoMaterialImporter, Log, TEXT("found ptag\n"));
 
 					// Remove invalid characters and any '_skinXX' suffix from the material name.
 					CommonHelper::RemoveInvalidCharacters(materialName);
@@ -555,22 +568,22 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 				useClearCoat = false;
 				useSubsurface = false;
 
-				AddColorParam(baseColorNode, mat, mat->BaseColor, graphOffset);
-				AddFloatParam(metallicNode, mat, mat->Metallic, graphOffset);
+				AddColorParam(baseColorNode, mat, &mat->BaseColor, NULL, graphx, graphy);
+				AddFloatParam(metallicNode, mat, &mat->Metallic, NULL, graphx, graphy);
 
-				useTransparent = AddFloatParam(opacityNode, mat, mat->Opacity, graphOffset);
+				useTransparent = AddFloatParam(opacityNode, mat, &mat->Opacity, NULL, graphx, graphy);
 
-				AddColorParam(emissiveColorNode, mat, mat->EmissiveColor, graphOffset);
-				AddVectorParam(normalNode, mat, mat->Normal, graphOffset, SAMPLERTYPE_Normal);
-				AddFloatParam(specularNode, mat, mat->Specular, graphOffset);
-				AddFloatParam(roughnessNode, mat, mat->Roughness, graphOffset);
+				AddColorParam(emissiveColorNode, mat, &mat->EmissiveColor, NULL, graphx, graphy);
+				AddVectorParam(normalNode, mat, &mat->Normal, NULL, graphx, graphy, SAMPLERTYPE_Normal);
+				AddFloatParam(specularNode, mat, &mat->Specular, NULL, graphx, graphy);
+				AddFloatParam(roughnessNode, mat, &mat->Roughness, NULL, graphx, graphy);
 				
-				useClearCoat |= AddFloatParam(clearcoatNode, mat, mat->ClearCoat, graphOffset);
-				useClearCoat |= AddFloatParam(clearcoatRoughNode, mat, mat->ClearCoatRoughness, graphOffset);
+				useClearCoat |= AddFloatParam(clearcoatNode, mat, &mat->ClearCoat, NULL, graphx, graphy);
+				useClearCoat |= AddFloatParam(clearcoatRoughNode, mat, &mat->ClearCoatRoughness, NULL, graphx, graphy);
 
-				AddFloatParam(ambientOcclusionNode, mat, mat->AmbientOcclusion, graphOffset);
+				AddFloatParam(ambientOcclusionNode, mat, &mat->AmbientOcclusion, NULL, graphx, graphy);
 				
-				useSubsurface = AddColorParam(subsurfaceColorNode, mat, mat->SubsurfaceColor, graphOffset);
+				useSubsurface = AddColorParam(subsurfaceColorNode, mat, &mat->SubsurfaceColor, NULL, graphx, graphy);
 
 				if (useTransparent)
 					mat->BlendMode = BLEND_Translucent;
@@ -585,7 +598,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 					mat->PostEditChange();
 
 				for (int i = 0; i < unkownNodes.Num(); i++)
-					AddUnkownParam(unkownNodes[i], mat, graphOffset);
+					AddUnkownParam(unkownNodes[i], mat, graphx, graphy);
 
 				FAssetRegistryModule::AssetCreated(mat);
 
@@ -638,7 +651,413 @@ void MaterialCreator::FindTextureNodes(const FXmlNode *Node, TArray<TextureInfo>
 	}
 }
 
-bool MaterialCreator::AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<float>& matInput, int &graphOffset)
+template <typename T>
+bool MaterialCreator::AddLerpParam(FXmlNode * node, UMaterial * material, FMaterialInput<T>* material_input, FExpressionInput * input, int & graphx, int & graphy, ChannelType type)
+{
+    UE_LOG(ModoMaterialImporter, Log, TEXT("LERP"));
+    auto lerp = NewObject<UMaterialExpressionLinearInterpolate>(material);
+    UMaterialExpression * expression = NULL;
+    expression = lerp;
+    
+    material->Expressions.Add(expression);
+    
+    expression->MaterialExpressionEditorX = graphx;
+    expression->MaterialExpressionEditorY = graphy;
+    
+    TArray<FExpressionOutput> outputs = expression->GetOutputs();
+    if (material_input)
+    {
+        material_input->Expression = expression;
+    }
+    else if (input)
+    {
+        input->Expression = expression;
+    }
+    auto output = outputs.GetData();
+    
+    TArray<FXmlNode*> property_nodes = node->GetChildrenNodes();
+    
+    FXmlNode * node_a;
+    FXmlNode * node_b;
+    FXmlNode * node_alpha;
+    
+    for (int i=0; i < property_nodes.Num(); i++)
+    {
+        if (property_nodes[i]->GetTag().Equals(TEXT("property"),ESearchCase::IgnoreCase))
+        {
+            FString property_name = property_nodes[i]->GetAttribute(FString("name"));
+            UE_LOG(ModoMaterialImporter, Log, TEXT("load property %s"), *property_name);
+            
+            if (property_name.Equals(TEXT("A"), ESearchCase::IgnoreCase)) node_a = property_nodes[i];
+            else if (property_name.Equals(TEXT("B"), ESearchCase::IgnoreCase)) node_b = property_nodes[i];
+            else if (property_name.Equals(TEXT("Alpha"), ESearchCase::IgnoreCase)) node_alpha = property_nodes[i];
+        }
+    }
+    if (!node_a || !node_b || !node_alpha) return false;
+    
+    switch (type)
+    {
+        case FLOAT_CHANNEL:
+            AddFloatParam(node_a,material,NULL,&(lerp->A),graphx,graphy);
+             AddFloatParam(node_b,material,NULL,&(lerp->B),graphx,graphy);
+            break;
+        case VECTOR_CHANNEL:
+            AddVectorParam(node_a,material,NULL,&(lerp->A),graphx,graphy,SAMPLERTYPE_Normal);
+             AddVectorParam(node_b,material,NULL,&(lerp->B),graphx,graphy,SAMPLERTYPE_Normal);
+            break;
+        case COLOR_CHANNEL:
+             AddColorParam(node_a,material,NULL,&(lerp->A),graphx,graphy);
+             AddColorParam(node_b,material,NULL,&(lerp->B),graphx,graphy);
+            break;
+        default:
+            break;
+    }
+    
+    AddFloatParam(node_alpha,material,NULL,&(lerp->Alpha),graphx,graphy);
+    
+    material->PostEditChange();
+    
+    return true;
+}
+
+template <typename T>
+bool MaterialCreator::AddMultiplyParam(FXmlNode * node, UMaterial * material, FMaterialInput<T>* material_input, FExpressionInput * input, int & graphx, int & graphy, ChannelType type)
+{
+    auto multiply = NewObject<UMaterialExpressionMultiply>(material);
+    UMaterialExpression * expression = multiply;
+    
+    material->Expressions.Add(expression);
+    
+    expression->MaterialExpressionEditorX = graphx;
+    expression->MaterialExpressionEditorY = graphy;
+    
+    TArray<FExpressionOutput> outputs = expression->GetOutputs();
+    auto output = outputs.GetData();
+    
+    if (material_input)
+    {
+        material_input->Expression = expression;
+    }
+    else if (input)
+    {
+        input->Expression = expression;
+    }
+    
+    TArray<FXmlNode*> property_nodes = node->GetChildrenNodes();
+    
+    FXmlNode * node_a;
+    FXmlNode * node_b;
+    
+    for (int i=0; i < property_nodes.Num(); i++)
+    {
+        if (property_nodes[i]->GetTag().Equals(TEXT("property"),ESearchCase::IgnoreCase))
+        {
+            FString property_name = property_nodes[i]->GetAttribute(FString("name"));
+            UE_LOG(ModoMaterialImporter, Log, TEXT("load property %s"), *property_name);
+            
+            if (property_name.Equals(TEXT("A"), ESearchCase::IgnoreCase)) node_a = property_nodes[i];
+            else if (property_name.Equals(TEXT("B"), ESearchCase::IgnoreCase)) node_b = property_nodes[i];
+        }
+    }
+    if (!node_a || !node_b) return false;
+    
+
+    switch (type)
+    {
+        case FLOAT_CHANNEL:
+            AddFloatParam(node_a,material,NULL,&(multiply)->A,graphx,graphy);
+            AddFloatParam(node_b,material,NULL,&(multiply)->B,graphx,graphy);
+            break;
+        case VECTOR_CHANNEL:
+            AddVectorParam(node_a,material,NULL,&(multiply)->A,graphx,graphy,SAMPLERTYPE_Normal);
+            AddVectorParam(node_b,material,NULL,&(multiply)->B,graphx,graphy,SAMPLERTYPE_Normal);
+            break;
+        case COLOR_CHANNEL:
+            AddColorParam(node_a,material,NULL,&(multiply)->A,graphx,graphy);
+            AddColorParam(node_b,material,NULL,&(multiply)->B,graphx,graphy);
+            break;
+        default:
+            break;
+    }
+                
+    material->PostEditChange();
+    
+    return true;
+}
+
+template <typename T> bool MaterialCreator::AddCompositeParam( FXmlNode * node, UMaterial * material, FMaterialInput<T>* matInput, FExpressionInput * input, int & graphx, int & graphy, ChannelType type)
+{
+    TArray<FXmlNode*> nodes = node->GetChildrenNodes();
+     UE_LOG(ModoMaterialImporter,Log,TEXT("composite but what type %i\n"),nodes.Num());
+     
+    FXmlNode * composite_node = nodes.Num() > 0 ? nodes[0] : NULL;
+    if (!composite_node) return false;
+    graphx -= 200;
+    if (composite_node->GetTag().Equals(TEXT("lerp"),ESearchCase::IgnoreCase)) return AddLerpParam(composite_node,material,matInput,input,graphx,graphy,type);
+    else if (composite_node->GetTag().Equals(TEXT("multiply"),ESearchCase::IgnoreCase)) return AddMultiplyParam(composite_node,material,matInput,input,graphx,graphy,type);
+    graphx += 200;
+    return false;
+}
+
+bool MaterialCreator::AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<float> * matInput, FExpressionInput * input, int & graphx, int & graphy)
+{
+    UE_LOG(ModoMaterialImporter,Log,TEXT("Float\n"));
+	if (Node)
+	{
+        if (!AddCompositeParam(Node,mat,matInput,input,graphx, graphy, FLOAT_CHANNEL))
+        {
+            TArray<TextureInfo> textureNodeInfos;
+            FindTextureNodes(Node, textureNodeInfos);
+            bool anyTextureUsed = false;
+
+            for (int i = 0; i < textureNodeInfos.Num(); i++)
+            {
+                const FString & content = textureNodeInfos[i].filename;
+                const FXmlNode * texNode = textureNodeInfos[i].node;
+                const bool isSRGB = textureNodeInfos[i].isSRGB;
+
+                if (!content.IsEmpty() && isTextureFileName(content))
+                {
+                    ModoMaterial::TextureManager * texManager = ModoMaterial::TextureManager::Instance();
+                    UTexture* tex = texManager->LoadTexture(*content, _path, _rootPath, isSRGB, TC_Default);
+                    if (tex)
+                    {
+                        FString wrapU = texNode->GetAttribute("wrapU");
+                        FString wrapV = texNode->GetAttribute("wrapV");
+                        float tiling[2];
+
+                        tiling[0] = tiling[1] = 1.0;
+
+                        if (!wrapU.IsEmpty())
+                            tiling[0] = processDigitalNumbers(wrapU)[0];
+
+                        if (!wrapV.IsEmpty())
+                            tiling[1] = processDigitalNumbers(wrapV)[0];
+
+                        FString swizzling = texNode->GetAttribute("channel");
+                        int outIndex = channelOutputIndex(swizzling);
+
+                        int uvChannelIndex = 0;
+                        FString uvChannelIndexStr = texNode->GetAttribute("uvindex");
+                        if (!wrapV.IsEmpty())
+                            uvChannelIndex = FCString::Atoi(*uvChannelIndexStr);
+
+                        FAssetRegistryModule::AssetCreated(tex);
+
+                        EMaterialSamplerType type;
+                        type = (isSRGB == true) ? SAMPLERTYPE_Color : SAMPLERTYPE_LinearColor;
+                        LinkTexture<float>(mat, tex, matInput, input, graphx, graphy, tiling, uvChannelIndex, outIndex, type);
+
+                        anyTextureUsed = true;
+                    }
+                }
+            }
+
+            if (!anyTextureUsed)
+            {
+                FString content = Node->GetAttribute("value");
+                FVector4 vec = processDigitalNumbers(content);
+
+                if (matInput)
+                {
+                    if (vec[0] == matInput->Constant)
+                    return false;
+
+                    matInput->Constant = vec[0];
+
+                    vector<float> color = { vec[0] };
+
+                    LinkConstant<float>(mat, color, matInput, NULL, graphx, graphy);
+                }
+                else if (input)
+                {
+                    vector<float> color = { vec[0] };
+                    
+                    LinkConstant<float>(mat, color, NULL, input, graphx, graphy);
+                }
+            }
+        }
+		return true;
+	}
+
+	return false;
+}
+
+bool MaterialCreator::AddVectorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FVector>* matInput, FExpressionInput * input,int & graphx, int & graphy, EMaterialSamplerType type)
+{
+	if (Node)
+	{
+        if (!AddCompositeParam(Node,mat,matInput,input,graphx, graphy, VECTOR_CHANNEL))
+        {
+            TArray<TextureInfo> textureNodeInfos;
+            FindTextureNodes(Node, textureNodeInfos);
+            bool anyTextureUsed = false;
+
+            for (int i = 0; i < textureNodeInfos.Num(); i++)
+            {
+                const FString& content = textureNodeInfos[i].filename;
+                const FXmlNode*	texNode = textureNodeInfos[i].node;
+                const bool isSRGB = textureNodeInfos[i].isSRGB;
+
+                if (!content.IsEmpty() && isTextureFileName(content))
+                {
+                    ModoMaterial::TextureManager	*texManager = ModoMaterial::TextureManager::Instance();
+                    TextureCompressionSettings	 texCompSet = TC_Default;
+
+                    if (type == SAMPLERTYPE_Normal)
+                        texCompSet = TC_Normalmap;
+
+                    UTexture* tex = texManager->LoadTexture(*content, _path, _rootPath, isSRGB, texCompSet);
+                    if (tex)
+                    {
+                        FString wrapU = texNode->GetAttribute("wrapU");
+                        FString wrapV = texNode->GetAttribute("wrapV");
+                        float tiling[2];
+
+                        tiling[0] = tiling[1] = 1.0;
+
+                        if (!wrapU.IsEmpty())
+                            tiling[0] = processDigitalNumbers(wrapU)[0];
+
+                        if (!wrapV.IsEmpty())
+                            tiling[1] = processDigitalNumbers(wrapV)[0];
+
+                        FString swizzling = texNode->GetAttribute("channel");
+                        int outIndex = channelOutputIndex(swizzling);
+
+                        int uvChannelIndex = 0;
+                        FString uvChannelIndexStr = texNode->GetAttribute("uvindex");
+                        if (!wrapV.IsEmpty())
+                            uvChannelIndex = FCString::Atoi(*uvChannelIndexStr);
+
+                        FAssetRegistryModule::AssetCreated(tex);
+                        LinkTexture<FVector>(mat, tex, matInput, input, graphx, graphy, tiling, uvChannelIndex, outIndex, type);
+
+                        anyTextureUsed = true;
+                    }
+                }
+            }
+
+            if (!anyTextureUsed)
+            {
+                FString content = Node->GetAttribute("value");
+                FVector4 vec = processDigitalNumbers(content);
+                
+                if (matInput)
+                {
+
+                    if (matInput->Constant == FVector(vec[0], vec[1], vec[2]))
+                        return false;
+
+                    matInput->Constant = FVector(vec[0], vec[1], vec[2]);
+
+                    vector<float> color = { vec[0], vec[1], vec[2] };
+
+                    LinkConstant<FVector>(mat, color, matInput, input, graphx, graphy);
+                }
+                else if (input)
+                {
+                    vector<float> color = { vec[0], vec[1], vec[2] };
+                    LinkConstant<FVector>(mat, color, matInput, input, graphx, graphy);
+                }
+            }
+
+            return true;
+        }
+    }
+
+	return false;
+}
+
+bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FColor>* matInput, FExpressionInput * input,int & graphx, int & graphy)
+{
+	if (Node)
+	{
+        if (!AddCompositeParam(Node,mat,matInput,input,graphx, graphy, COLOR_CHANNEL))
+        {
+            TArray<TextureInfo> textureNodeInfos;
+            FindTextureNodes(Node, textureNodeInfos);
+            bool anyTextureUsed = false;
+
+            for (int i = 0; i < textureNodeInfos.Num(); i++)
+            {
+                const FString& content = textureNodeInfos[i].filename;
+                const FXmlNode*	texNode = textureNodeInfos[i].node;
+                const bool isSRGB = textureNodeInfos[i].isSRGB;
+
+                if (!content.IsEmpty() && isTextureFileName(content))
+                {
+                    ModoMaterial::TextureManager * texManager = ModoMaterial::TextureManager::Instance();
+                    UTexture* tex = texManager->LoadTexture(*content, _path, _rootPath, isSRGB, TC_Default);
+                    if (tex)
+                    {
+                        FString wrapU = texNode->GetAttribute("wrapU");
+                        FString wrapV = texNode->GetAttribute("wrapV");
+                        float tiling[2];
+
+                        tiling[0] = tiling[1] = 1.0;
+
+                        if (!wrapU.IsEmpty())
+                            tiling[0] = processDigitalNumbers(wrapU)[0];
+
+                        if (!wrapV.IsEmpty())
+                            tiling[1] = processDigitalNumbers(wrapV)[0];
+
+                        FString swizzling = texNode->GetAttribute("channel");
+                        int outIndex = channelOutputIndex(swizzling);
+
+                        int uvChannelIndex = 0;
+                        FString uvChannelIndexStr = texNode->GetAttribute("uvindex");
+                        if (!wrapV.IsEmpty())
+                            uvChannelIndex = FCString::Atoi(*uvChannelIndexStr);
+
+                        FAssetRegistryModule::AssetCreated(tex);
+
+                        EMaterialSamplerType type;
+                        type = (isSRGB == true) ? SAMPLERTYPE_Color : SAMPLERTYPE_LinearColor;
+                        LinkTexture<FColor>(mat, tex, matInput, input, graphx, graphy, tiling, uvChannelIndex, outIndex, type);
+
+                        anyTextureUsed = true;
+                    }
+                }
+            }
+
+            if (!anyTextureUsed)
+            {
+                FString content = Node->GetAttribute("value");
+                FVector4 vec = processDigitalNumbers(content);
+
+                uint8 R = FMath::Clamp((int)(vec[0] * 255), 0, 255);
+                uint8 G = FMath::Clamp((int)(vec[1] * 255), 0, 255);
+                uint8 B = FMath::Clamp((int)(vec[2] * 255), 0, 255);
+                uint8 A = FMath::Clamp((int)(vec[3] * 255), 0, 255);
+
+                if (matInput)
+                {
+                    if (matInput->Constant == FColor(R, G, B, A))
+                        return false;
+
+                    matInput->Constant = FColor(R, G, B, A);
+    
+                    vector<float> color = { vec[0], vec[1], vec[2], vec[3] };
+
+                    LinkConstant<FColor> (mat, color, matInput, NULL, graphx, graphy);
+                }
+                else if (input)
+                {
+                    vector<float> color = { vec[0], vec[1], vec[2], vec[3] };
+                    LinkConstant<FColor> (mat, color, NULL, input, graphx, graphy);
+                }
+            }
+
+            return true;
+        }
+    }
+
+	return false;
+}
+
+void MaterialCreator::AddUnkownParam(FXmlNode *Node, UMaterial* mat, int & graphx, int & graphy)
 {
 	if (Node)
 	{
@@ -682,230 +1101,7 @@ bool MaterialCreator::AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
 
 					EMaterialSamplerType type;
 					type = (isSRGB == true) ? SAMPLERTYPE_Color : SAMPLERTYPE_LinearColor;
-					LinkTexture<float>(mat, tex, &matInput, graphOffset, tiling, uvChannelIndex, outIndex, type);
-
-					anyTextureUsed = true;
-				}
-			}
-		}
-
-		if (!anyTextureUsed)
-		{
-			FString content = Node->GetAttribute("value");
-			FVector4 vec = processDigitalNumbers(content);
-
-			if (vec[0] == matInput.Constant)
-				return false;
-
-			matInput.Constant = vec[0];
-
-			vector<float> color = { vec[0] };
-
-			LinkConstant<float>(mat, color, &matInput, graphOffset);
-		}
-
-		return true;
-	}
-
-	return false;
-}
-
-bool MaterialCreator::AddVectorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FVector>& matInput, int &graphOffset, EMaterialSamplerType type)
-{
-	if (Node)
-	{
-		TArray<TextureInfo> textureNodeInfos;
-		FindTextureNodes(Node, textureNodeInfos);
-		bool anyTextureUsed = false;
-
-		for (int i = 0; i < textureNodeInfos.Num(); i++)
-		{
-			const FString& content = textureNodeInfos[i].filename;
-			const FXmlNode*	texNode = textureNodeInfos[i].node;
-			const bool isSRGB = textureNodeInfos[i].isSRGB;
-
-			if (!content.IsEmpty() && isTextureFileName(content))
-			{
-				ModoMaterial::TextureManager	*texManager = ModoMaterial::TextureManager::Instance();
-				TextureCompressionSettings	 texCompSet = TC_Default;
-
-				if (type == SAMPLERTYPE_Normal)
-					texCompSet = TC_Normalmap;
-
-				UTexture* tex = texManager->LoadTexture(*content, _path, _rootPath, isSRGB, texCompSet);
-				if (tex)
-				{
-					FString wrapU = texNode->GetAttribute("wrapU");
-					FString wrapV = texNode->GetAttribute("wrapV");
-					float tiling[2];
-
-					tiling[0] = tiling[1] = 1.0;
-
-					if (!wrapU.IsEmpty())
-						tiling[0] = processDigitalNumbers(wrapU)[0];
-
-					if (!wrapV.IsEmpty())
-						tiling[1] = processDigitalNumbers(wrapV)[0];
-
-					FString swizzling = texNode->GetAttribute("channel");
-					int outIndex = channelOutputIndex(swizzling);
-
-					int uvChannelIndex = 0;
-					FString uvChannelIndexStr = texNode->GetAttribute("uvindex");
-					if (!wrapV.IsEmpty())
-						uvChannelIndex = FCString::Atoi(*uvChannelIndexStr);
-
-					FAssetRegistryModule::AssetCreated(tex);
-					LinkTexture<FVector>(mat, tex, &matInput, graphOffset, tiling, uvChannelIndex, outIndex, type);
-
-					anyTextureUsed = true;
-				}
-			}
-		}
-
-		if (!anyTextureUsed)
-		{
-			FString content = Node->GetAttribute("value");
-			FVector4 vec = processDigitalNumbers(content);
-
-			if (matInput.Constant == FVector(vec[0], vec[1], vec[2]))
-				return false;
-
-			matInput.Constant = FVector(vec[0], vec[1], vec[2]);
-
-			vector<float> color = { vec[0], vec[1], vec[2] };
-
-			LinkConstant<FVector>(mat, color, &matInput, graphOffset);
-		}
-
-		return true;
-	}
-
-	return false;
-}
-
-bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FColor>& matInput, int &graphOffset)
-{
-	if (Node)
-	{
-		TArray<TextureInfo> textureNodeInfos;
-		FindTextureNodes(Node, textureNodeInfos);
-		bool anyTextureUsed = false;
-
-		for (int i = 0; i < textureNodeInfos.Num(); i++)
-		{
-			const FString& content = textureNodeInfos[i].filename;
-			const FXmlNode*	texNode = textureNodeInfos[i].node;
-			const bool isSRGB = textureNodeInfos[i].isSRGB;
-
-			if (!content.IsEmpty() && isTextureFileName(content))
-			{
-				ModoMaterial::TextureManager * texManager = ModoMaterial::TextureManager::Instance();
-				UTexture* tex = texManager->LoadTexture(*content, _path, _rootPath, isSRGB, TC_Default);
-				if (tex)
-				{
-					FString wrapU = texNode->GetAttribute("wrapU");
-					FString wrapV = texNode->GetAttribute("wrapV");
-					float tiling[2];
-
-					tiling[0] = tiling[1] = 1.0;
-
-					if (!wrapU.IsEmpty())
-						tiling[0] = processDigitalNumbers(wrapU)[0];
-
-					if (!wrapV.IsEmpty())
-						tiling[1] = processDigitalNumbers(wrapV)[0];
-
-					FString swizzling = texNode->GetAttribute("channel");
-					int outIndex = channelOutputIndex(swizzling);
-
-					int uvChannelIndex = 0;
-					FString uvChannelIndexStr = texNode->GetAttribute("uvindex");
-					if (!wrapV.IsEmpty())
-						uvChannelIndex = FCString::Atoi(*uvChannelIndexStr);
-
-					FAssetRegistryModule::AssetCreated(tex);
-
-					EMaterialSamplerType type;
-					type = (isSRGB == true) ? SAMPLERTYPE_Color : SAMPLERTYPE_LinearColor;
-					LinkTexture<FColor>(mat, tex, &matInput, graphOffset, tiling, uvChannelIndex, outIndex, type);
-
-					anyTextureUsed = true;
-				}
-			}
-		}
-
-		if (!anyTextureUsed)
-		{
-			FString content = Node->GetAttribute("value");
-			FVector4 vec = processDigitalNumbers(content);
-
-			uint8 R = FMath::Clamp((int)(vec[0] * 255), 0, 255);
-			uint8 G = FMath::Clamp((int)(vec[1] * 255), 0, 255);
-			uint8 B = FMath::Clamp((int)(vec[2] * 255), 0, 255);
-			uint8 A = FMath::Clamp((int)(vec[3] * 255), 0, 255);
-
-			if (matInput.Constant == FColor(R, G, B, A))
-				return false;
-
-			matInput.Constant = FColor(R, G, B, A);
-
-			vector<float> color = { vec[0], vec[1], vec[2], vec[3] };
-
-			LinkConstant<FColor>(mat, color, &matInput, graphOffset);
-		}
-
-		return true;
-	}
-
-	return false;
-}
-
-void MaterialCreator::AddUnkownParam(FXmlNode *Node, UMaterial* mat, int &graphOffset)
-{
-	if (Node)
-	{
-		TArray<TextureInfo> textureNodeInfos;
-		FindTextureNodes(Node, textureNodeInfos);
-		bool anyTextureUsed = false;
-
-		for (int i = 0; i < textureNodeInfos.Num(); i++)
-		{
-			const FString& content = textureNodeInfos[i].filename;
-			const FXmlNode*	texNode = textureNodeInfos[i].node;
-			const bool isSRGB = textureNodeInfos[i].isSRGB;
-
-			if (!content.IsEmpty() && isTextureFileName(content))
-			{
-				ModoMaterial::TextureManager * texManager = ModoMaterial::TextureManager::Instance();
-				UTexture* tex = texManager->LoadTexture(*content, _path, _rootPath, isSRGB, TC_Default);
-				if (tex)
-				{
-					FString wrapU = texNode->GetAttribute("wrapU");
-					FString wrapV = texNode->GetAttribute("wrapV");
-					float tiling[2];
-
-					tiling[0] = tiling[1] = 1.0;
-
-					if (!wrapU.IsEmpty())
-						tiling[0] = processDigitalNumbers(wrapU)[0];
-
-					if (!wrapV.IsEmpty())
-						tiling[1] = processDigitalNumbers(wrapV)[0];
-
-					FString swizzling = texNode->GetAttribute("channel");
-					int outIndex = channelOutputIndex(swizzling);
-
-					int uvChannelIndex = 0;
-					FString uvChannelIndexStr = texNode->GetAttribute("uvindex");
-					if (!wrapV.IsEmpty())
-						uvChannelIndex = FCString::Atoi(*uvChannelIndexStr);
-
-					FAssetRegistryModule::AssetCreated(tex);
-
-					EMaterialSamplerType type;
-					type = (isSRGB == true) ? SAMPLERTYPE_Color : SAMPLERTYPE_LinearColor;
-					LinkTexture<FColor>(mat, tex, NULL, graphOffset, tiling, uvChannelIndex, outIndex, type);
+					LinkTexture<FColor>(mat, tex, NULL, NULL, graphx, graphy, tiling, uvChannelIndex, outIndex, type);
 
 					anyTextureUsed = true;
 				}
@@ -925,7 +1121,7 @@ void MaterialCreator::AddUnkownParam(FXmlNode *Node, UMaterial* mat, int &graphO
 
 			vector<float> color = { vec[0], vec[1], vec[2], vec[3] };
 
-			LinkConstent<FColor>(mat, color, NULL, graphOffset);
+			LinkConstent<FColor>(mat, color, NULL, graphx, graphy);
 #else
 			UE_LOG(ModoMaterialImporter, Log, TEXT("Remove unknown property %s, as it doesn't reference any images"), *(Node->GetAttribute("name")));
 #endif

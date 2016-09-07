@@ -26,7 +26,10 @@
 
 namespace ModoMaterial
 {
-	class MaterialCreator
+    
+    enum ChannelType {FLOAT_CHANNEL,VECTOR_CHANNEL,COLOR_CHANNEL};
+	
+    class MaterialCreator
 	{
 	public:
 
@@ -46,12 +49,20 @@ namespace ModoMaterial
 			FString filename;
 			bool isSRGB; 
 		};
+        
+        
+        template <typename T>
+        static bool AddLerpParam(FXmlNode * node, UMaterial * material, FMaterialInput<T>* matInput, FExpressionInput * input, int & graphx, int & graphy, ChannelType type);
+        template <typename T>
+        static bool    AddMultiplyParam(FXmlNode * node, UMaterial * material, FMaterialInput<T>* material_input, FExpressionInput * input, int & graphx, int & graphy, ChannelType type);
+        template <typename T> 
+        static bool AddCompositeParam( FXmlNode * node, UMaterial * material, FMaterialInput<T>* matInput,  FExpressionInput * input, int & graphx, int & graphy, ChannelType type);
 
 		static void FindTextureNodes(const FXmlNode *Node, TArray<TextureInfo>& txtrInfos);
-		static bool AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<float>& matInput, int &graphOffset);
-		static bool AddVectorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FVector>& matInput, int &graphOffset, EMaterialSamplerType type);
-		static bool AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FColor>& matInput, int &graphOffset);
-		static void AddUnkownParam(FXmlNode *Node, UMaterial* mat, int &graphOffset);
+		static bool AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<float>* matInput, FExpressionInput * input, int & graphx, int & graphy);
+		static bool AddVectorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FVector>* matInput, FExpressionInput * input,int & graphx, int & graphy, EMaterialSamplerType type);
+		static bool AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FColor>* matInput, FExpressionInput * input, int & graphx, int & graphy);
+		static void AddUnkownParam(FXmlNode *Node, UMaterial* mat, int & graphx, int & graphy);
 
 		static FString _path, _rootPath;
 		static TArray< ImageInfo> _imageInfo;
