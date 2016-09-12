@@ -677,9 +677,9 @@ bool MaterialCreator::AddLerpParam(FXmlNode * node, UMaterial * material, FMater
     
     TArray<FXmlNode*> property_nodes = node->GetChildrenNodes();
     
-    FXmlNode * node_a;
-    FXmlNode * node_b;
-    FXmlNode * node_alpha;
+    FXmlNode * node_a = NULL;
+    FXmlNode * node_b = NULL;
+    FXmlNode * node_alpha = NULL;
     
     for (int i=0; i < property_nodes.Num(); i++)
     {
@@ -745,8 +745,8 @@ bool MaterialCreator::AddMultiplyParam(FXmlNode * node, UMaterial * material, FM
     
     TArray<FXmlNode*> property_nodes = node->GetChildrenNodes();
     
-    FXmlNode * node_a;
-    FXmlNode * node_b;
+    FXmlNode * node_a = NULL;
+    FXmlNode * node_b = NULL;
     
     for (int i=0; i < property_nodes.Num(); i++)
     {
