@@ -25,7 +25,8 @@
             [
                 "Win64",
                 "Win32",
-                "Mac"
+                "Mac",
+                "Linux"
             ]
         
         },
@@ -37,7 +38,8 @@
             [
                 "Win64",
                 "Win32",
-                "Mac"
+                "Mac",
+                "Linux"
             ]
         }
     ]
