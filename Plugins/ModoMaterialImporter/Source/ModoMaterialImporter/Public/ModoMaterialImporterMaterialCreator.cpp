@@ -29,6 +29,8 @@
 #include "Materials/MaterialExpressionLinearInterpolate.h"
 #include "Materials/MaterialExpressionMultiply.h"
 #include "Materials/MaterialExpressionConstant.h"
+#include "Materials/MaterialExpressionOneMinus.h"
+#include "Materials/MaterialExpressionNoise.h"
 
 #include "AssetRegistryModule.h"
 
@@ -660,6 +662,102 @@ void MaterialCreator::FindTextureNodes(const FXmlNode *Node, TArray<TextureInfo>
 }
 
 template <typename T>
+bool MaterialCreator::AddNoiseParam(FXmlNode * node, UMaterial * material, FMaterialInput<T> * material_input, FExpressionInput * input, int & graphx, int & graphy, ChannelType type)
+{
+    auto noise = NewObject<UMaterialExpressionNoise>(material);
+    UMaterialExpression * expression = NULL;
+    expression = noise;
+    
+    material->Expressions.Add(expression);
+    
+    expression->MaterialExpressionEditorX = graphx;
+    expression->MaterialExpressionEditorY = graphy;
+    
+    TArray<FExpressionOutput> outputs = expression->GetOutputs();
+    if (material_input) material_input->Expression = expression;
+    else if (input) input->Expression = expression;
+    
+    auto output = outputs.GetData();
+    
+    TArray<FXmlNode *> property_nodes = node->GetChildrenNodes();
+    
+    FXmlNode * position_node;
+    FXmlNode * filter_width_node;
+    
+    for (int i=0; i < property_nodes.Num(); i++)
+    {
+        if (property_nodes[i]->GetTag().Equals(TEXT("property"),ESearchCase::IgnoreCase))
+        {
+            FString property_name = property_nodes[i]->GetAttribute(FString("name"));
+            if (property_name.Equals(TEXT("Position"),ESearchCase::IgnoreCase)) position_node = property_nodes[i];
+            else if (property_name.Equals(TEXT("FilterWidth"),ESearchCase::IgnoreCase)) filter_width_node = property_nodes[i];
+        }
+    }
+    
+    if (!position_node || !filter_width_node) return false;
+    
+    AddFloatParam(position_node,material,NULL,&(noise->Position), graphx, graphy);
+    AddFloatParam(position_node,material,NULL,&(noise->FilterWidth), graphx, graphy);
+    
+    material->PostEditChange();
+    
+    return true;
+}
+
+template <typename T>
+bool MaterialCreator::AddOneMinusParam(FXmlNode * node, UMaterial * material, FMaterialInput<T> * material_input, FExpressionInput * input, int & graphx, int & graphy, ChannelType type)
+{
+    auto oneminus = NewObject<UMaterialExpressionOneMinus>(material);
+    UMaterialExpression * expression = NULL;
+    expression = oneminus;
+    
+    material->Expressions.Add(expression);
+    
+    expression->MaterialExpressionEditorX = graphx;
+    expression->MaterialExpressionEditorY = graphy;
+    
+    TArray<FExpressionOutput> outputs = expression->GetOutputs();
+    if (material_input) material_input->Expression = expression;
+    else if (input) input->Expression = expression;
+    
+    auto output = outputs.GetData();
+    
+    TArray<FXmlNode *> property_nodes = node->GetChildrenNodes();
+    FXmlNode * input_node;
+    
+    for (int i=0; i < property_nodes.Num(); i++)
+    {
+        if (property_nodes[i]->GetTag().Equals(TEXT("property"),ESearchCase::IgnoreCase))
+        {
+            FString property_name = property_nodes[i]->GetAttribute(FString("name"));
+            
+            if (property_name.Equals(TEXT("Input"),ESearchCase::IgnoreCase)) input_node = property_nodes[i];
+        }
+    }
+    if (!input_node) return false;
+    
+    switch (type)
+    {
+        case FLOAT_CHANNEL:
+            AddFloatParam(input_node,material,NULL,&(oneminus->Input),graphx,graphy);
+            break;
+        case VECTOR_CHANNEL:
+            AddVectorParam(input_node,material,NULL,&(oneminus->Input),graphx,graphy,SAMPLERTYPE_Normal);
+            break;
+        case COLOR_CHANNEL:
+            AddColorParam(input_node,material,NULL,&(oneminus->Input),graphx,graphy);
+            break;
+        default:
+            break;
+    }
+    
+    material->PostEditChange();
+    
+    return true;
+    
+}
+
+template <typename T>
 bool MaterialCreator::AddLerpParam(FXmlNode * node, UMaterial * material, FMaterialInput<T>* material_input, FExpressionInput * input, int & graphx, int & graphy, ChannelType type)
 {
     UE_LOG(ModoMaterialImporter, Log, TEXT("LERP"));
@@ -793,6 +891,7 @@ bool MaterialCreator::AddMultiplyParam(FXmlNode * node, UMaterial * material, FM
     return true;
 }
 
+
 template <typename T> bool MaterialCreator::AddCompositeParam( FXmlNode * node, UMaterial * material, FMaterialInput<T>* matInput, FExpressionInput * input, int & graphx, int & graphy, ChannelType type)
 {
     TArray<FXmlNode*> nodes = node->GetChildrenNodes();
@@ -803,6 +902,8 @@ template <typename T> bool MaterialCreator::AddCompositeParam( FXmlNode * node, 
     graphx -= 200;
     if (composite_node->GetTag().Equals(TEXT("lerp"),ESearchCase::IgnoreCase)) return AddLerpParam(composite_node,material,matInput,input,graphx,graphy,type);
     else if (composite_node->GetTag().Equals(TEXT("multiply"),ESearchCase::IgnoreCase)) return AddMultiplyParam(composite_node,material,matInput,input,graphx,graphy,type);
+    else if (composite_node->GetTag().Equals(TEXT("oneminus"),ESearchCase::IgnoreCase)) return AddOneMinusParam(composite_node,material,matInput, input, graphx, graphy, type);
+    else if (composite_node->GetTag().Equals(TEXT("noise"),ESearchCase::IgnoreCase)) return AddNoiseParam(composite_node, material, matInput, input, graphx, graphy, type);
     graphx += 200;
     return false;
 }

@@ -50,7 +50,10 @@ namespace ModoMaterial
 			bool isSRGB; 
 		};
         
-        
+        template <typename T>
+        static bool AddOneMinusParam(FXmlNode * node, UMaterial * material, FMaterialInput<T> * material_input, FExpressionInput * input, int & graphx, int & graphy, ChannelType type);
+        template <typename T>
+        static bool AddNoiseParam(FXmlNode * node, UMaterial * material, FMaterialInput<T> * material_input, FExpressionInput * input, int & graphx, int & graphy, ChannelType type);
         template <typename T>
         static bool AddLerpParam(FXmlNode * node, UMaterial * material, FMaterialInput<T>* matInput, FExpressionInput * input, int & graphx, int & graphy, ChannelType type);
         template <typename T>
