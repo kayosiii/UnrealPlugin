@@ -31,6 +31,7 @@
 #include "Materials/MaterialExpressionConstant.h"
 #include "Materials/MaterialExpressionOneMinus.h"
 #include "Materials/MaterialExpressionNoise.h"
+#include "Materials/MaterialExpressionComponentMask.h"
 
 #include "AssetRegistryModule.h"
 
@@ -161,31 +162,31 @@ void LinkConstant(UMaterial* mat, const vector<float>& value, FMaterialInput<T>*
 			return;
 		case 1:
 		{
-				  UMaterialExpressionConstant* expConst = NewObject<UMaterialExpressionConstant>(mat);
-				  expConst->R = value[0];
-				  Expression = expConst;
+            UMaterialExpressionConstant* expConst = NewObject<UMaterialExpressionConstant>(mat);
+            expConst->R = value[0];
+            Expression = expConst;
 		}
 			break;
 		case 2:
 		{
-				  UMaterialExpressionConstant2Vector* expConst = NewObject<UMaterialExpressionConstant2Vector>(mat);
-				  expConst->R = value[0];
-				  expConst->G = value[1];
-				  Expression = expConst;
+            UMaterialExpressionConstant2Vector* expConst = NewObject<UMaterialExpressionConstant2Vector>(mat);
+            expConst->R = value[0];
+            expConst->G = value[1];
+            Expression = expConst;
 		}
 			break;
 		case 3:
 		{
-				  UMaterialExpressionConstant3Vector* expConst = NewObject<UMaterialExpressionConstant3Vector>(mat);
-				  expConst->Constant = FLinearColor(value[0], value[1], value[2]);
-				  Expression = expConst;
+            UMaterialExpressionConstant3Vector* expConst = NewObject<UMaterialExpressionConstant3Vector>(mat);
+            expConst->Constant = FLinearColor(value[0], value[1], value[2]);
+            Expression = expConst;
 		}
 			break;
 		default:
 		{
-				   UMaterialExpressionConstant4Vector* expConst = NewObject<UMaterialExpressionConstant4Vector>(mat);
-				   expConst->Constant = FLinearColor(value[0], value[1], value[2], value[3]);
-				   Expression = expConst;
+            UMaterialExpressionConstant4Vector* expConst = NewObject<UMaterialExpressionConstant4Vector>(mat);
+            expConst->Constant = FLinearColor(value[0], value[1], value[2], value[3]);
+            Expression = expConst;
 		}
 			break;
 		}
@@ -578,7 +579,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 				useClearCoat = false;
 				useSubsurface = false;
 
-				AddColorParam(baseColorNode, mat, &mat->BaseColor, NULL, graphx, graphy);
+				AddColorParam(baseColorNode, mat, &mat->BaseColor, NULL, graphx, graphy, false);
 				AddFloatParam(metallicNode, mat, &mat->Metallic, NULL, graphx, graphy);
 
 				useTransparent = AddFloatParam(opacityNode, mat, &mat->Opacity, NULL, graphx, graphy);
@@ -879,8 +880,8 @@ bool MaterialCreator::AddMultiplyParam(FXmlNode * node, UMaterial * material, FM
             AddVectorParam(node_b,material,NULL,&(multiply)->B,graphx,graphy,SAMPLERTYPE_Normal);
             break;
         case COLOR_CHANNEL:
-            AddColorParam(node_a,material,NULL,&(multiply)->A,graphx,graphy);
-            AddColorParam(node_b,material,NULL,&(multiply)->B,graphx,graphy);
+            AddColorParam(node_a,material,NULL,&(multiply)->A,graphx,graphy,true);
+            AddColorParam(node_b,material,NULL,&(multiply)->B,graphx,graphy,true);
             break;
         default:
             break;
@@ -1078,7 +1079,7 @@ bool MaterialCreator::AddVectorParam(FXmlNode *Node, UMaterial* mat, FMaterialIn
 	return false;
 }
 
-bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FColor>* matInput, FExpressionInput * input,int & graphx, int & graphy)
+bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FColor>* matInput, FExpressionInput * input,int & graphx, int & graphy, bool maskRGB)
 {
 	if (Node)
 	{
@@ -1140,8 +1141,40 @@ bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
                 uint8 G = FMath::Clamp((int)(vec[1] * 255), 0, 255);
                 uint8 B = FMath::Clamp((int)(vec[2] * 255), 0, 255);
                 uint8 A = FMath::Clamp((int)(vec[3] * 255), 0, 255);
-
-                if (matInput)
+                
+                
+                if (maskRGB)
+                {
+                    auto mask = NewObject<UMaterialExpressionComponentMask>(mat);
+                    UMaterialExpression * expression = NULL;
+                    expression = mask;
+                    
+                    mat->Expressions.Add(expression);
+                    
+                    expression->MaterialExpressionEditorX = graphx;
+                    expression->MaterialExpressionEditorY = graphy;
+                    
+                    mask->R = 1;
+                    mask->G = 1;
+                    mask->B = 1;
+                    mask->A = 0;
+                    
+                    TArray<FExpressionOutput> outputs = expression->GetOutputs();
+                    
+                    if (matInput)
+                    {
+                       matInput->Expression = expression;
+                        
+                    }
+                    else if (input)
+                    {
+                        input->Expression = expression;
+                    }
+                    
+                    vector<float> color = { vec[0], vec[1], vec[2], vec[3] };
+                    LinkConstant<FColor> (mat, color, NULL, &(mask)->Input, graphx, graphy);
+                }
+                else if (matInput)
                 {
                     if (matInput->Constant == FColor(R, G, B, A))
                         return false;
@@ -1149,8 +1182,8 @@ bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
                     matInput->Constant = FColor(R, G, B, A);
     
                     vector<float> color = { vec[0], vec[1], vec[2], vec[3] };
-
                     LinkConstant<FColor> (mat, color, matInput, NULL, graphx, graphy);
+
                 }
                 else if (input)
                 {

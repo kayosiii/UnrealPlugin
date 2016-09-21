@@ -64,7 +64,7 @@ namespace ModoMaterial
 		static void FindTextureNodes(const FXmlNode *Node, TArray<TextureInfo>& txtrInfos);
 		static bool AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<float>* matInput, FExpressionInput * input, int & graphx, int & graphy);
 		static bool AddVectorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FVector>* matInput, FExpressionInput * input,int & graphx, int & graphy, EMaterialSamplerType type);
-		static bool AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FColor>* matInput, FExpressionInput * input, int & graphx, int & graphy);
+		static bool AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<FColor>* matInput, FExpressionInput * input, int & graphx, int & graphy, bool maskRGB = false);
 		static void AddUnkownParam(FXmlNode *Node, UMaterial* mat, int & graphx, int & graphy);
 
 		static FString _path, _rootPath;
