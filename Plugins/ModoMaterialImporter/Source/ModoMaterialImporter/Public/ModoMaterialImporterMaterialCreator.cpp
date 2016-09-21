@@ -584,7 +584,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 
 				useTransparent = AddFloatParam(opacityNode, mat, &mat->Opacity, NULL, graphx, graphy);
 
-				AddColorParam(emissiveColorNode, mat, &mat->EmissiveColor, NULL, graphx, graphy);
+				AddColorParam(emissiveColorNode, mat, &mat->EmissiveColor, NULL, graphx, graphy, false);
 				AddVectorParam(normalNode, mat, &mat->Normal, NULL, graphx, graphy, SAMPLERTYPE_Normal);
 				AddFloatParam(specularNode, mat, &mat->Specular, NULL, graphx, graphy);
 				AddFloatParam(roughnessNode, mat, &mat->Roughness, NULL, graphx, graphy);
@@ -594,7 +594,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 
 				AddFloatParam(ambientOcclusionNode, mat, &mat->AmbientOcclusion, NULL, graphx, graphy);
 				
-				useSubsurface = AddColorParam(subsurfaceColorNode, mat, &mat->SubsurfaceColor, NULL, graphx, graphy);
+				useSubsurface = AddColorParam(subsurfaceColorNode, mat, &mat->SubsurfaceColor, NULL, graphx, graphy, false);
 
 				if (useTransparent)
 					mat->BlendMode = BLEND_Translucent;
@@ -682,8 +682,8 @@ bool MaterialCreator::AddNoiseParam(FXmlNode * node, UMaterial * material, FMate
     
     TArray<FXmlNode *> property_nodes = node->GetChildrenNodes();
     
-    FXmlNode * position_node;
-    FXmlNode * filter_width_node;
+    FXmlNode * position_node = NULL;
+    FXmlNode * filter_width_node = NULL;
     
     for (int i=0; i < property_nodes.Num(); i++)
     {
@@ -724,7 +724,7 @@ bool MaterialCreator::AddOneMinusParam(FXmlNode * node, UMaterial * material, FM
     auto output = outputs.GetData();
     
     TArray<FXmlNode *> property_nodes = node->GetChildrenNodes();
-    FXmlNode * input_node;
+    FXmlNode * input_node = NULL;
     
     for (int i=0; i < property_nodes.Num(); i++)
     {
@@ -746,7 +746,7 @@ bool MaterialCreator::AddOneMinusParam(FXmlNode * node, UMaterial * material, FM
             AddVectorParam(input_node,material,NULL,&(oneminus->Input),graphx,graphy,SAMPLERTYPE_Normal);
             break;
         case COLOR_CHANNEL:
-            AddColorParam(input_node,material,NULL,&(oneminus->Input),graphx,graphy);
+            AddColorParam(input_node,material,NULL,&(oneminus->Input),graphx,graphy,false);
             break;
         default:
             break;
@@ -813,8 +813,8 @@ bool MaterialCreator::AddLerpParam(FXmlNode * node, UMaterial * material, FMater
              AddVectorParam(node_b,material,NULL,&(lerp->B),graphx,graphy,SAMPLERTYPE_Normal);
             break;
         case COLOR_CHANNEL:
-             AddColorParam(node_a,material,NULL,&(lerp->A),graphx,graphy);
-             AddColorParam(node_b,material,NULL,&(lerp->B),graphx,graphy);
+             AddColorParam(node_a,material,NULL,&(lerp->A),graphx,graphy,false);
+             AddColorParam(node_b,material,NULL,&(lerp->B),graphx,graphy,false);
             break;
         default:
             break;
