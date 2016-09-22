@@ -548,7 +548,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 				{
 					// Use nested material ID for the material name.
 					materialName = matID;
-					materialName = materialName + FString("_") + ptag;
+					if (!ptag.Equals(FString(""),ESearchCase::IgnoreCase))  materialName = materialName + FString("_") + ptag;
 
 					// Remove invalid characters
 					CommonHelper::RemoveInvalidCharacters(materialName);
