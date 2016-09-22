@@ -61,7 +61,7 @@ bool CommonHelper::RemoveInvalidCharacters(FString& name)
 
 	for (int i = 0; i < name.Len(); i++)
 	{
-		if (isalnum(name[i]) || name[i] == '_' || name[i] == '-') {
+		if (isalnum(name[i]) || name[i] == '_' || name[i] == '-' || name[i] == '/') {
 			validName.AppendChar(name[i]);
 		}
 		else {
