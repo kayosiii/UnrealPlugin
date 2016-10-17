@@ -928,7 +928,6 @@ bool MaterialCreator::AddMultiplyParam(FXmlNode * node, UMaterial * material, FM
     return true;
 }
 
-
 template <typename T> bool MaterialCreator::AddCompositeParam( FXmlNode * node, UMaterial * material, FMaterialInput<T>* matInput, FExpressionInput * input, int & graphx, int & graphy, ChannelType type)
 {
     TArray<FXmlNode*> nodes = node->GetChildrenNodes();
@@ -1226,7 +1225,7 @@ bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
                 else if (input)
                 {
                     vector<float> color = { vec[0], vec[1], vec[2], vec[3] };
-                    LinkConstant<FColor> (mat, color, NULL, input, graphx, graphy);
+                    linkVectorParam<FColor> (mat, color, NULL, input, graphx, graphy);
                 }
             }
 
