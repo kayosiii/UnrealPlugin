@@ -615,7 +615,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 
 				if (mat)
 				{
-					FAssetEditorManager::Get().OpenEditorForAsset(mat);
+				//	FAssetEditorManager::Get().OpenEditorForAsset(mat);
 				}
 			}
 			else
