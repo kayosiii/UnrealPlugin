@@ -26,6 +26,7 @@
 #include "Materials/MaterialExpressionConstant4Vector.h"
 #include "Materials/MaterialExpressionConstant3Vector.h"
 #include "Materials/MaterialExpressionConstant2Vector.h"
+#include "Materials/MaterialExpressionVectorParameter.h"
 #include "Materials/MaterialExpressionLinearInterpolate.h"
 #include "Materials/MaterialExpressionMultiply.h"
 #include "Materials/MaterialExpressionConstant.h"
@@ -192,7 +193,7 @@ void LinkConstant(UMaterial* mat, const vector<float>& value, FMaterialInput<T>*
 		}
 		mat->Expressions.Add(Expression);
 
-		Expression->MaterialExpressionEditorX = -200;
+		Expression->MaterialExpressionEditorX = graphx;
 		Expression->MaterialExpressionEditorY = graphy;
 		graphy += 64;
 
@@ -213,6 +214,35 @@ void LinkConstant(UMaterial* mat, const vector<float>& value, FMaterialInput<T>*
 
 		mat->PostEditChange();
 	}
+}
+
+template <typename T>
+void linkVectorParam( UMaterial* mat, const vector<float>& value, FMaterialInput<T>* matInput, FExpressionInput * input, int &graphx, int & graphy)
+{
+    UMaterialExpression* expression = NULL;
+    UMaterialExpressionVectorParameter * vectorParam = NewObject<UMaterialExpressionVectorParameter>(mat);
+    vectorParam->DefaultValue = FLinearColor(value[0], value[1], value[2]);
+    mat->Expressions.Add(expression);
+    expression->MaterialExpressionEditorX = graphx;
+    expression->MaterialExpressionEditorY = graphy;
+    
+    graphy += 64;
+    TArray<FExpressionOutput> outputs;
+    outputs = expression->GetOutputs();
+    FExpressionOutput* output = outputs.GetData();
+    if (matInput) {
+        matInput->Expression = expression;
+        matInput->Mask = output->Mask;
+        matInput->MaskR = output->MaskR;
+        matInput->MaskG = output->MaskG;
+        matInput->MaskB = output->MaskB;
+        matInput->MaskA = output->MaskA;
+    }
+    else if (input) {
+        input->Expression = expression;
+    }
+
+    mat->PostEditChange();
 }
 
 template <typename T>
@@ -802,6 +832,7 @@ bool MaterialCreator::AddLerpParam(FXmlNode * node, UMaterial * material, FMater
     }
     if (!node_a || !node_b || !node_alpha) return false;
     
+    graphx -= 100;
     switch (type)
     {
         case FLOAT_CHANNEL:
@@ -868,6 +899,7 @@ bool MaterialCreator::AddMultiplyParam(FXmlNode * node, UMaterial * material, FM
     }
     if (!node_a || !node_b) return false;
     
+    graphx -= 100;
 
     switch (type)
     {
