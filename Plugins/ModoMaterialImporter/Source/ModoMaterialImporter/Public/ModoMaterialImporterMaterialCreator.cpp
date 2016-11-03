@@ -398,7 +398,8 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 	if (rootNode != NULL)
 	{
 
-		const TArray< FXmlNode * > matNodes = rootNode->GetChildrenNodes();
+		//const 
+		TArray< FXmlNode * > matNodes = rootNode->GetChildrenNodes();
 
 		// The path of the XML file is used as the base path when "Relative Export Path" is checked in the exporter settings.
 		_path = FString (path);
@@ -406,9 +407,11 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 		_usePtagMaterialName = false;
 
 		// Find image nodes firstly, we need image properties for images when creating materials
-		for (int j = 0; j < matNodes.Num(); j++)
+		//for (int j = 0; j < matNodes.Num(); j++)
+		for (auto Iter(matNodes.CreateIterator()); Iter; Iter++)
 		{
-			FXmlNode *matNode = matNodes[j];
+		//	FXmlNode *matNode = matNodes[j];
+			FXmlNode *matNode = (*Iter);
 			FString tag = matNode->GetTag();
 
 			if (tag.Equals(TEXT("ImageFiles"), ESearchCase::CaseSensitive))
@@ -439,9 +442,11 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 			}
 		}
 
-		for (int j = 0; j < matNodes.Num(); j++)
+		//for (int j = 0; j < matNodes.Num(); j++)
+		for (auto Iter(matNodes.CreateIterator()); Iter; Iter++)
 		{
-			FXmlNode *matNode = matNodes[j];
+			//FXmlNode *matNode = matNodes[j];
+			FXmlNode *matNode = (*Iter);
 			FString tag = matNode->GetTag();
 			FString ptag = FString();
 
@@ -696,7 +701,7 @@ template <typename T>
 bool MaterialCreator::AddNoiseParam(FXmlNode * node, UMaterial * material, FMaterialInput<T> * material_input, FExpressionInput * input, int & graphx, int & graphy, ChannelType type)
 {
     auto noise = NewObject<UMaterialExpressionNoise>(material);
-    UMaterialExpression * expression = NULL;
+	 UMaterialExpression * expression = NULL;
     expression = noise;
     
     material->Expressions.Add(expression);
@@ -785,7 +790,6 @@ bool MaterialCreator::AddOneMinusParam(FXmlNode * node, UMaterial * material, FM
     material->PostEditChange();
     
     return true;
-    
 }
 
 template <typename T>
@@ -943,7 +947,7 @@ template <typename T> bool MaterialCreator::AddCompositeParam( FXmlNode * node, 
 
 bool MaterialCreator::AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInput<float> * matInput, FExpressionInput * input, int & graphx, int & graphy)
 {
-    UE_LOG(ModoMaterialImporter,Log,TEXT("Float\n"));
+    UE_LOG(ModoMaterialImporter,Log,TEXT("Float :))))\n"));
 	if (Node)
 	{
         if (!AddCompositeParam(Node,mat,matInput,input,graphx, graphy, FLOAT_CHANNEL))
@@ -977,7 +981,9 @@ bool MaterialCreator::AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
                             tiling[1] = processDigitalNumbers(wrapV)[0];
 
                         FString swizzling = texNode->GetAttribute("channel");
+						
                         int outIndex = channelOutputIndex(swizzling);
+						UE_LOG(ModoMaterialImporter, Log, TEXT("channel %i\n"), outIndex);
 
                         int uvChannelIndex = 0;
                         FString uvChannelIndexStr = texNode->GetAttribute("uvindex");
