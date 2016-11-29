@@ -297,6 +297,9 @@ void LinkTexture(
 				}
 			}
 		}
+		
+		texSampleExpressions.Empty();
+//         GetWorld()->ForceGarbageCollection(true);
 
 		// If Expression can not be found, we create a new one
 		if (Expression == NULL)
@@ -438,6 +441,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 						_imageInfo.Add(imageInfo);
 					}
 				}
+				imageNodes.Empty();
 				break;
 			}
 		}
@@ -659,7 +663,9 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 				UE_LOG(ModoMaterialImporter, Log, TEXT("Invalid Material Tag %s"), *tag);
 			}
 		}
-	}
+	
+      //  matNodes.Empty();
+    }
 }
 
 void MaterialCreator::FindTextureNodes(const FXmlNode *Node, TArray<TextureInfo>& txtrInfos)
@@ -729,6 +735,8 @@ bool MaterialCreator::AddNoiseParam(FXmlNode * node, UMaterial * material, FMate
             else if (property_name.Equals(TEXT("FilterWidth"),ESearchCase::IgnoreCase)) filter_width_node = property_nodes[i];
         }
     }
+    property_nodes.Empty();
+    outputs.Empty();
     
     if (!position_node || !filter_width_node) return false;
     
@@ -770,6 +778,8 @@ bool MaterialCreator::AddOneMinusParam(FXmlNode * node, UMaterial * material, FM
             if (property_name.Equals(TEXT("Input"),ESearchCase::IgnoreCase)) input_node = property_nodes[i];
         }
     }
+    property_nodes.Empty();
+    outputs.Empty();
     if (!input_node) return false;
     
     switch (type)
@@ -834,6 +844,8 @@ bool MaterialCreator::AddLerpParam(FXmlNode * node, UMaterial * material, FMater
             else if (property_name.Equals(TEXT("Alpha"), ESearchCase::IgnoreCase)) node_alpha = property_nodes[i];
         }
     }
+    property_nodes.Empty();
+    outputs.Empty();
     if (!node_a || !node_b || !node_alpha) return false;
     
     graphx -= 100;
@@ -901,6 +913,8 @@ bool MaterialCreator::AddMultiplyParam(FXmlNode * node, UMaterial * material, FM
             else if (property_name.Equals(TEXT("B"), ESearchCase::IgnoreCase)) node_b = property_nodes[i];
         }
     }
+    property_nodes.Empty();
+    outputs.Empty();
     if (!node_a || !node_b) return false;
     
     graphx -= 100;
@@ -961,7 +975,7 @@ bool MaterialCreator::AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
                 const FXmlNode * texNode = textureNodeInfos[i].node;
                 const bool isSRGB = textureNodeInfos[i].isSRGB;
 
-                if (!content.IsEmpty() && isTextureFileName(content))
+                    if (!content.IsEmpty() && isTextureFileName(content))
                 {
                     ModoMaterial::TextureManager * texManager = ModoMaterial::TextureManager::Instance();
                     UTexture* tex = texManager->LoadTexture(*content, _path, _rootPath, isSRGB, TC_Default);
