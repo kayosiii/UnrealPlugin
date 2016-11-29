@@ -1103,6 +1103,7 @@ bool MaterialCreator::AddVectorParam(FXmlNode *Node, UMaterial* mat, FMaterialIn
                     }
                 }
             }
+            textureNodeInfos.Empty();
 
             if (!anyTextureUsed)
             {
@@ -1187,7 +1188,8 @@ bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
                     }
                 }
             }
-
+            textureNodeInfos.Empty();
+            
             if (!anyTextureUsed)
             {
                 FString content = Node->GetAttribute("value");
