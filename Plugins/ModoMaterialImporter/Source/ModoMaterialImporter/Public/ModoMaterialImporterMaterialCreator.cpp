@@ -211,6 +211,7 @@ void LinkConstant(UMaterial* mat, const vector<float>& value, FMaterialInput<T>*
 		else if (input) {
             input->Expression = Expression;
         }
+        Outputs.Empty();
 
 		mat->PostEditChange();
 	}
@@ -241,6 +242,7 @@ void linkVectorParam( UMaterial* mat, const vector<float>& value, FMaterialInput
     else if (input) {
         input->Expression = expression;
     }
+    outputs.Empty();
 
     mat->PostEditChange();
 }
@@ -565,6 +567,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 						UE_LOG(ModoMaterialImporter, Log, TEXT("Ignore non-property node"));
 					}
 				}
+				property_nodes.Empty();
 
 				UE_LOG(ModoMaterialImporter, Log, TEXT("looking for ptag\n"));
 				FString materialName;
@@ -650,6 +653,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 				for (int i = 0; i < unkownNodes.Num(); i++)
 					AddUnkownParam(unkownNodes[i], mat, graphx, graphy);
 
+                unkownNodes.Empty();
 				FAssetRegistryModule::AssetCreated(mat);
 
 				if (mat)
@@ -663,8 +667,8 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 				UE_LOG(ModoMaterialImporter, Log, TEXT("Invalid Material Tag %s"), *tag);
 			}
 		}
-	
-      //  matNodes.Empty();
+
+        matNodes.Empty();
     }
 }
 
@@ -701,6 +705,7 @@ void MaterialCreator::FindTextureNodes(const FXmlNode *Node, TArray<TextureInfo>
 			txtrInfos.Add(txtrInfo);
 		}
 	}
+	childNodes.Empty();
 }
 
 template <typename T>
