@@ -211,7 +211,7 @@ void LinkConstant(UMaterial* mat, const vector<float>& value, FMaterialInput<T>*
 		else if (input) {
             input->Expression = Expression;
         }
-
+        Outputs.Empty();
 		mat->PostEditChange();
 	}
 }
@@ -241,7 +241,7 @@ void linkVectorParam( UMaterial* mat, const vector<float>& value, FMaterialInput
     else if (input) {
         input->Expression = expression;
     }
-
+    outputs.Empty();
     mat->PostEditChange();
 }
 
@@ -344,6 +344,7 @@ void LinkTexture(
 				}
 
 				Expression->Coordinates = texCoordInput;
+                texCoordExpressions.Empty();
 			}
 		}
 
@@ -353,6 +354,7 @@ void LinkTexture(
             input->Connect(outIndex, Expression);
         }
 
+        texSampleExpressions.Empty();
 		mat->PostEditChange();
 	}
 }
@@ -439,6 +441,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 					}
 				}
 				break;
+                imageNodes.Empty();
 			}
 		}
 
@@ -516,7 +519,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 				FXmlNode * ambientOcclusionNode = NULL;
 				FXmlNode * subsurfaceColorNode = NULL;
 
-				TArray<FXmlNode *> unkownNodes;
+				TArray<FXmlNode *> unknownNodes;
 
 				for (int32 i = 0; i < propertyNodes.Num(); i++)
 				{
@@ -550,7 +553,7 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 							subsurfaceColorNode = propertyNode;
 						else
 						{
-							unkownNodes.Add(propertyNode);
+							unknownNodes.Add(propertyNode);
 							UE_LOG(ModoMaterialImporter, Log, TEXT("property %s is not supported, append to unknow nodes"), *propertyName);
 						}
 
@@ -643,8 +646,8 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 				if (useTransparent || useClearCoat || useSubsurface)
 					mat->PostEditChange();
 
-				for (int i = 0; i < unkownNodes.Num(); i++)
-					AddUnkownParam(unkownNodes[i], mat, graphx, graphy);
+				for (int i = 0; i < unknownNodes.Num(); i++)
+					AddUnknownParam(unknownNodes[i], mat, graphx, graphy);
 
 				FAssetRegistryModule::AssetCreated(mat);
 
@@ -652,6 +655,9 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 				{
 				//	FAssetEditorManager::Get().OpenEditorForAsset(mat);
 				}
+				
+				unknownNodes.Empty();
+                propertyNodes.Empty();
 			}
 			else
 			{
@@ -659,7 +665,9 @@ void MaterialCreator::LoadMaterial(FXmlFile *matXml, const FString &path, Assign
 				UE_LOG(ModoMaterialImporter, Log, TEXT("Invalid Material Tag %s"), *tag);
 			}
 		}
-	}
+
+        matNodes.Empty();
+    }
 }
 
 void MaterialCreator::FindTextureNodes(const FXmlNode *Node, TArray<TextureInfo>& txtrInfos)
@@ -695,6 +703,8 @@ void MaterialCreator::FindTextureNodes(const FXmlNode *Node, TArray<TextureInfo>
 			txtrInfos.Add(txtrInfo);
 		}
 	}
+
+   // childNodes.Empty();
 }
 
 template <typename T>
@@ -736,6 +746,9 @@ bool MaterialCreator::AddNoiseParam(FXmlNode * node, UMaterial * material, FMate
     AddFloatParam(position_node,material,NULL,&(noise->FilterWidth), graphx, graphy);
     
     material->PostEditChange();
+    
+    outputs.Empty();
+    property_nodes.Empty();
     
     return true;
 }
@@ -788,7 +801,8 @@ bool MaterialCreator::AddOneMinusParam(FXmlNode * node, UMaterial * material, FM
     }
     
     material->PostEditChange();
-    
+    outputs.Empty();
+    property_nodes.Empty();
     return true;
 }
 
@@ -1236,7 +1250,7 @@ bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
 	return false;
 }
 
-void MaterialCreator::AddUnkownParam(FXmlNode *Node, UMaterial* mat, int & graphx, int & graphy)
+void MaterialCreator::AddUnknownParam(FXmlNode *Node, UMaterial* mat, int & graphx, int & graphy)
 {
 	if (Node)
 	{
