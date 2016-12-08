@@ -681,7 +681,8 @@ void MaterialCreator::FindTextureNodes(const FXmlNode *Node, TArray<TextureInfo>
 		txtrInfos.Add(txtrInfo);
 		return;
 	}
-	const TArray<FXmlNode*> childNodes = Node->GetChildrenNodes();
+	//const 
+	TArray<FXmlNode*> childNodes = Node->GetChildrenNodes();
 	for (int i = 0; i < childNodes.Num(); i++)
 	{
 		if (childNodes[i]->GetTag() == "texture")
@@ -704,7 +705,7 @@ void MaterialCreator::FindTextureNodes(const FXmlNode *Node, TArray<TextureInfo>
 		}
 	}
 
-   // childNodes.Empty();
+    childNodes.Empty();
 }
 
 template <typename T>
@@ -872,6 +873,8 @@ bool MaterialCreator::AddLerpParam(FXmlNode * node, UMaterial * material, FMater
     AddFloatParam(node_alpha,material,NULL,&(lerp->Alpha),graphx,graphy);
     
     material->PostEditChange();
+    outputs.Empty();
+    property_nodes.Empty();
     
     return true;
 }
@@ -938,6 +941,8 @@ bool MaterialCreator::AddMultiplyParam(FXmlNode * node, UMaterial * material, FM
     }
                 
     material->PostEditChange();
+    outputs.Empty();
+    property_nodes.Empty();
     
     return true;
 }
@@ -955,6 +960,8 @@ template <typename T> bool MaterialCreator::AddCompositeParam( FXmlNode * node, 
     else if (composite_node->GetTag().Equals(TEXT("oneminus"),ESearchCase::IgnoreCase)) return AddOneMinusParam(composite_node,material,matInput, input, graphx, graphy, type);
     else if (composite_node->GetTag().Equals(TEXT("noise"),ESearchCase::IgnoreCase)) return AddNoiseParam(composite_node, material, matInput, input, graphx, graphy, type);
     graphx += 200;
+    
+    nodes.Empty();
     return false;
 }
 
@@ -1014,6 +1021,8 @@ bool MaterialCreator::AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
                 }
             }
 
+            
+            
             if (!anyTextureUsed)
             {
                 FString content = Node->GetAttribute("value");
@@ -1038,6 +1047,7 @@ bool MaterialCreator::AddFloatParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
                 }
             }
         }
+       // textureNodeInfos.Empty();
 		return true;
 	}
 
@@ -1097,6 +1107,7 @@ bool MaterialCreator::AddVectorParam(FXmlNode *Node, UMaterial* mat, FMaterialIn
                         anyTextureUsed = true;
                     }
                 }
+                textureNodeInfos.Empty();
             }
 
             if (!anyTextureUsed)
@@ -1224,6 +1235,7 @@ bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
                     
                     vector<float> color = { vec[0], vec[1], vec[2], vec[3] };
                     LinkConstant<FColor> (mat, color, NULL, &(mask)->Input, graphx, graphy);
+                    outputs.Empty();
                 }
                 else if (matInput)
                 {
@@ -1243,6 +1255,7 @@ bool MaterialCreator::AddColorParam(FXmlNode *Node, UMaterial* mat, FMaterialInp
                 }
             }
 
+            textureNodeInfos.Empty();
             return true;
         }
     }
@@ -1319,6 +1332,8 @@ void MaterialCreator::AddUnknownParam(FXmlNode *Node, UMaterial* mat, int & grap
 			UE_LOG(ModoMaterialImporter, Log, TEXT("Remove unknown property %s, as it doesn't reference any images"), *(Node->GetAttribute("name")));
 #endif
 		}
-	}
+	
+        textureNodeInfos.Empty();
+    }
 
 }
